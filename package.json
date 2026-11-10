@@ -1,0 +1,53 @@
+{
+  "name": "@captiveorigins/payload-plugin-color-theory",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Color Theory for Payload: build site and admin themes from color harmonies (complementary, triadic, tetradic and more), check contrast, and import or export themes as JSON with hex values.",
+  "keywords": [
+    "payload",
+    "payload-plugin",
+    "payloadcms",
+    "color-theory",
+    "color-harmony",
+    "theme",
+    "palette",
+    "contrast",
+    "oklch",
+    "design-tokens"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run typecheck && npm test"
+  },
+  "peerDependencies": {
+    "payload": "^3.80.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}
