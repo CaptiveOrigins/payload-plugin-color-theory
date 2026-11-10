@@ -2,13 +2,13 @@
 
 Color Theory for Payload: build site and admin themes from color harmonies (complementary, triadic, tetradic and more), with contrast checked in light and dark, an Auto, Light and Dark switch, and JSON import and export with hex values.
 
-**Status:** early, 0.x. 37 tests pass. Tried on a local copy of the Captive Origins site in Chromium, light and dark:
+**Status:** early, 0.x. 38 tests pass. Tried on a local copy of the Captive Origins site in Chromium, light and dark:
 
 - the editor works: presets, harmonies, import, export and save;
 - the admin takes on a saved theme's colors;
 - axe finds no contrast problems in anything this plugin draws.
 
-It hasn't been used on a live site. The site-side light/dark switch, brand intensity, the UI kit and the exact-colors warnings have only been tested in jsdom, not yet in a browser.
+It hasn't been used on a live site yet. On a local copy of the Captive Origins site (Chromium, light and dark, desktop and phone), the light/dark switch, Bold brand intensity, the header and its menus passed axe on eight pages. The editor's UI kit and the exact-colors warnings have only been tested in jsdom so far.
 
 ## What it does
 
@@ -18,7 +18,7 @@ It hasn't been used on a live site. The site-side light/dark switch, brand inten
 - **Payload's admin, too.** It gets its own `--color-base-*`, success, warning and error scales, the variables Payload is themed with, so the admin's own dark mode keeps working. Off until you turn it on.
 - **Readable by construction.** Text passes WCAG AA (4.5:1) on every surface it can sit on: the page, cards, sunken areas and its own soft badge background. Fills stand out from the page (3:1). A brand color that doesn't pass is moved in lightness only, keeping its hue. The editor shows every pair with its ratio.
 - **Light, dark and Auto.** The CSS follows `data-theme="light|dark"` on `<html>`. With no choice saved, it follows the device. `@captiveorigins/payload-plugin-color-theory/mode` has the pieces a site needs:
-  - `colorModeScript()`: an inline script for `<head>`, so the page never flashes the wrong mode;
+  - `colorModeScript()`: an inline script for `<head>`, so the page never flashes the wrong mode. It's exported from the main entry (and `/mode/script`), not `/mode`, so a server layout can call it;
   - `ColorModeProvider` and `useColorMode()`: in Auto, these follow the device live;
   - `ColorModeSelector`: an Auto / Light / Dark select you can label in any language.
 
@@ -67,7 +67,8 @@ The CSS is sent with an ETag and `no-cache`. A change shows on the next page loa
 On the site, link the CSS and add the mode script:
 
 ```tsx
-import { colorModeScript, ColorModeProvider, ColorModeSelector } from '@captiveorigins/payload-plugin-color-theory/mode'
+import { colorModeScript } from '@captiveorigins/payload-plugin-color-theory' // server-safe
+import { ColorModeProvider, ColorModeSelector } from '@captiveorigins/payload-plugin-color-theory/mode' // client
 
 <html suppressHydrationWarning>
   <head>

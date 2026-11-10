@@ -41,6 +41,10 @@
     "./mode": {
       "types": "./dist/mode/index.d.ts",
       "import": "./dist/mode/index.js"
+    },
+    "./mode/script": {
+      "types": "./dist/mode/script.d.ts",
+      "import": "./dist/mode/script.js"
     }
   },
   "main": "./dist/index.js",

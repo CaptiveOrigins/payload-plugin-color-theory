@@ -135,7 +135,7 @@ describe('brand intensity', () => {
     expect(bold['--palette-button']).toBe(bold['--palette-primary'])
     expect(off['--palette-button']).toBe(off['--palette-text'])
     expect(bold['--palette-band']).toContain('linear-gradient')
-    expect(off['--palette-band']).toBe('transparent')
+    expect(off['--palette-band']).toBe('none')
     expect(off['--palette-header']).toBe(off['--palette-surface'])
     expect(bold['--palette-header']).not.toBe(bold['--palette-surface'])
     expect(off['--palette-badge-primary']).toBe(off['--palette-surface-sunken'])

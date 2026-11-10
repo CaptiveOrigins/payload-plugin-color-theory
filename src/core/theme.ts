@@ -154,6 +154,12 @@ export function tokens(t: Theme): { light: Tokens; dark: Tokens } {
     // Brand intensity: each kind of element takes the brand colors or plain ones.
     out['--palette-button'] = on.buttons ? out['--palette-primary']! : text
     out['--palette-on-button'] = on.buttons ? out['--palette-on-primary']! : raised
+    // Hover: a small step away from the text color, so a hovered button never reads worse than at rest.
+    {
+      const fill = hexToOklch(out['--palette-button']!)
+      const ink = hexToOklch(out['--palette-on-button']!)
+      out['--palette-button-hover'] = oklchToHex({ ...fill, l: Math.min(0.98, Math.max(0.05, fill.l + (ink.l > fill.l ? -0.06 : 0.06))) })
+    }
     const headerBg = dark ? deep[850]! : deep[800]!
     out['--palette-header'] = on.header ? headerBg : surface
     out['--palette-on-header'] = on.header ? ensureContrast(dark ? n[50]! : n[0]!, headerBg, 4.5) : text
@@ -162,7 +168,7 @@ export function tokens(t: Theme): { light: Tokens; dark: Tokens } {
       out[`--palette-badge-${role}`] = on.badges ? out[`--palette-${role}-soft`]! : sunken
       out[`--palette-on-badge-${role}`] = on.badges ? out[`--palette-${role}-text`]! : out['--palette-text-muted']!
     }
-    out['--palette-band'] = on.bands ? `linear-gradient(90deg, ${out['--palette-primary']}, ${out['--palette-secondary']})` : 'transparent'
+    out['--palette-band'] = on.bands ? `linear-gradient(90deg, ${out['--palette-primary']}, ${out['--palette-secondary']})` : 'none'
     out['--palette-wash'] = on.washes ? `linear-gradient(135deg, ${out['--palette-primary-soft']}, ${out['--palette-secondary-soft']})` : surface
     return out
   }
@@ -201,6 +207,7 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
   { id: 'links-page', label: 'Links on the page', fg: '--palette-link', bg: '--palette-surface', min: 4.5, role: 'primary', variant: 'text' },
   { id: 'links-cards', label: 'Links on cards', fg: '--palette-link', bg: '--palette-surface-raised', min: 4.5, role: 'primary', variant: 'text' },
   { id: 'button', label: 'Main buttons', fg: '--palette-on-button', bg: '--palette-button', min: 4.5 },
+  { id: 'button-hover', label: 'Main buttons, hovered', fg: '--palette-on-button', bg: '--palette-button-hover', min: 4.5 },
   { id: 'primary-fill', label: 'Primary fills', fg: '--palette-on-primary', bg: '--palette-primary', min: 4.5, role: 'primary', variant: 'fill' },
   { id: 'secondary-fill', label: 'Secondary fills', fg: '--palette-on-secondary', bg: '--palette-secondary', min: 4.5, role: 'secondary', variant: 'fill' },
   { id: 'accent-fill', label: 'Accent fills', fg: '--palette-on-accent', bg: '--palette-accent', min: 4.5, role: 'accent', variant: 'fill' },

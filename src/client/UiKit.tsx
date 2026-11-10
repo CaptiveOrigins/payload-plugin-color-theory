@@ -103,7 +103,7 @@ export function UiKit({ v, mode, report, highlight, onUse }: { v: Record<string,
         <p style={{ margin: '0 0 4px', fontSize: '1.15em', fontWeight: 700 }}>{sp(['text-page'], <>A page intro</>)}</p>
         <p style={{ margin: '0 0 10px', color: s('text-muted') }}>{sp(['muted-page'], <>Muted text, and </>)} {sp(['links-page'], <span style={{ color: s('link'), textDecoration: 'underline' }}>a link</span>)}.</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {sp(['button', 'focus'], <span style={{ ...btn, background: s('button'), color: s('on-button'), outline: `2px solid ${s('focus')}`, outlineOffset: 2 }}>Main button</span>)}
+          {sp(['button', 'button-hover', 'focus'], <span style={{ ...btn, background: s('button'), color: s('on-button'), outline: `2px solid ${s('focus')}`, outlineOffset: 2 }}>Main button</span>)}
           {sp(['secondary-outline'], <span style={{ ...btn, color: s('secondary-text'), boxShadow: `inset 0 0 0 1.5px ${s('secondary-text')}` }}>Secondary</span>)}
           {sp(['secondary-fill'], <span style={{ ...btn, background: s('secondary'), color: s('on-secondary') }}>Second fill</span>)}
           {sp(['accent-fill'], <span style={{ ...btn, background: s('accent'), color: s('on-accent') }}>Accent</span>)}

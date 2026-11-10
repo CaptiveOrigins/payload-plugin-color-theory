@@ -2,7 +2,8 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { colorModeScript, ColorModeProvider, ColorModeSelector, useColorMode } from '../src/mode/index.js'
+import { ColorModeProvider, ColorModeSelector, useColorMode } from '../src/mode/index.js'
+import { colorModeScript } from '../src/mode/script.js'
 
 /** A controllable stand-in for the device's light or dark setting. */
 let dark = false
@@ -25,6 +26,12 @@ afterEach(cleanup)
 const deviceGoes = (d: boolean) => act(() => ((dark = d), listeners.forEach((f) => f())))
 
 describe('the no-flash script', () => {
+  it('is importable outside client code: its module has no "use client"', async () => {
+    const { readFileSync } = await import('node:fs')
+    expect(readFileSync(`${process.cwd()}/src/mode/script.ts`, 'utf8')).not.toMatch(/^['"]use client['"]/m)
+    expect((await import('../src/index.js')).colorModeScript).toBe(colorModeScript)
+  })
+
   it('uses a saved choice, else the device, and keeps the template’s storage key', () => {
     new Function(colorModeScript())()
     expect(document.documentElement.getAttribute('data-theme')).toBe('light')

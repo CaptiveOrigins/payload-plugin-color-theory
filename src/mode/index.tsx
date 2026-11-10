@@ -7,25 +7,18 @@ import { createContext, use, useCallback, useEffect, useId, useState, type React
  * It's kept in localStorage (default key `payload-theme`, the one Payload's website template uses, so existing
  * choices carry over) and shown as `data-theme="light|dark"` on <html>, which the theme's CSS reads.
  *
- * - `colorModeScript()` runs before the page draws, so it never flashes the wrong mode.
+ * - `colorModeScript()` (from the main entry or `/mode/script`, so a server layout can call it) runs before the
+ *   page draws, so it never flashes the wrong mode.
  * - `ColorModeProvider` and `useColorMode()` give the choice and the mode in effect, and in Auto follow the
  *   device live (switching the computer to dark updates the page without a reload).
  * - `ColorModeSelector` is the Auto / Light / Dark control.
  */
 export type ColorMode = 'auto' | 'light' | 'dark'
 export type ResolvedMode = 'light' | 'dark'
-export type ColorModeOptions = { storageKey?: string; attribute?: string }
 
-const KEY = 'payload-theme'
-const ATTR = 'data-theme'
-const QUERY = '(prefers-color-scheme: dark)'
+import { ATTR, KEY, QUERY, type ColorModeOptions } from './script.js'
 
-/** The script to put in <head> (inline, before anything renders). Sets the attribute from the saved choice or the device. */
-export function colorModeScript(o: ColorModeOptions = {}): string {
-  const key = JSON.stringify(o.storageKey ?? KEY)
-  const attr = JSON.stringify(o.attribute ?? ATTR)
-  return `(function(){try{var c=localStorage.getItem(${key});var m=c==='light'||c==='dark'?c:(window.matchMedia&&window.matchMedia('${QUERY}').matches?'dark':'light');document.documentElement.setAttribute(${attr},m)}catch(e){}})();`
-}
+export type { ColorModeOptions } from './script.js'
 
 const systemMode = (): ResolvedMode => (typeof window !== 'undefined' && window.matchMedia?.(QUERY).matches ? 'dark' : 'light')
 const readChoice = (key: string): ColorMode => {
