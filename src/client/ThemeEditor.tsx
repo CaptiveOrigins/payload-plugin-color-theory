@@ -1,9 +1,10 @@
 'use client'
 
 import { useField } from '@payloadcms/ui'
-import { useId, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react'
 
-import { contrastReport, exportTheme, hexToOklch, isHex, parseTheme, PRESETS, SCHEMES, themeFromHarmony, tokens, type Scheme, type Theme, type ThemeColors } from '../core/index.js'
+import { BRAND_GROUPS, brandGroups, contrastReport, exportTheme, hexToOklch, INTENSITY_LABELS, INTENSITY_LEVELS, isHex, parseTheme, PRESETS, SCHEMES, themeFromHarmony, tokens, type BrandGroup, type ContrastCheck, type Scheme, type Theme, type ThemeColors } from '../core/index.js'
+import { UiKit } from './UiKit.js'
 
 const ROLES: { key: keyof ThemeColors; label: string; hint: string; optional?: boolean }[] = [
   { key: 'primary', label: 'Primary', hint: 'Buttons, links, focus: the main brand color.' },
@@ -42,33 +43,12 @@ function Wheel({ colors }: { colors: string[] }) {
   )
 }
 
-/** One mode's preview, drawn only from the theme's tokens. */
-function Preview({ v, label }: { v: Record<string, string>; label: string }) {
-  const s = (k: string) => v[`--palette-${k}`]
-  const btn = (role: string): CSSProperties => ({ background: s(role), color: s(`on-${role}`), border: 0, borderRadius: v['--palette-radius-md'], padding: '8px 14px', font: 'inherit', fontWeight: 600 })
-  return (
-    <figure style={{ margin: 0, background: s('surface'), color: s('text'), borderRadius: v['--palette-radius-lg'], padding: 16, border: `1px solid ${s('border')}`, flex: '1 1 260px' }}>
-      <figcaption style={{ fontWeight: 600, marginBottom: 8 }}>{label}</figcaption>
-      <div style={{ background: s('surface-raised'), border: `1px solid ${s('border')}`, borderRadius: v['--palette-radius-lg'], padding: 12 }}>
-        <p style={{ margin: '0 0 4px', fontWeight: 650 }}>Red-footed tortoise</p>
-        <p style={{ margin: '0 0 10px', color: s('text-muted') }}>
-          Muted text, and <span style={{ color: s('link'), textDecoration: 'underline' }}>a link</span>.
-        </p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <span style={btn('primary')}>Primary</span>
-          <span style={btn('secondary')}>Secondary</span>
-          <span style={btn('accent')}>Accent</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-          {['success', 'warning', 'error'].map((r) => (
-            <span key={r} style={{ background: s(`${r}-soft`), color: s(`${r}-text`), borderRadius: 999, padding: '2px 10px', fontSize: '.9em' }}>
-              {r}
-            </span>
-          ))}
-        </div>
-      </div>
-    </figure>
-  )
+/** How a ratio reads: AAA, AA, AA but close to the line, or failing. Shown in words as well as color. */
+function grade(c: ContrastCheck): { text: string; color: string } {
+  if (!c.pass) return { text: 'Fails', color: 'var(--theme-error-500, #b42318)' }
+  if (c.aaa) return { text: 'AAA', color: 'var(--theme-success-500, #2f855a)' }
+  if (c.ratio < c.min + 0.5) return { text: 'AA, close', color: 'var(--theme-warning-500, #b7791f)' }
+  return { text: 'AA', color: 'var(--theme-success-500, #2f855a)' }
 }
 
 /** The theme field: start from a preset or a harmony, adjust each color, see it in light and dark, check contrast, import and export. */
@@ -84,7 +64,24 @@ export function ThemeEditor({ path }: { path: string }) {
   const tk = useMemo(() => tokens(theme), [theme])
   const report = useMemo(() => contrastReport(theme), [theme])
   const fails = report.filter((r) => !r.pass)
+  const groups = brandGroups(theme)
+  const level = theme.intensity?.level ?? 'bold'
+  const [highlight, setHighlight] = useState<string | null>(null)
+  // Results are announced once the person pauses, not on every change.
+  const [announced, setAnnounced] = useState('')
+  const summary = fails.length ? `${fails.length} contrast ${fails.length === 1 ? 'check falls' : 'checks fall'} short of WCAG AA.` : 'Every contrast check passes WCAG AA, in light and dark.'
+  useEffect(() => {
+    const t = setTimeout(() => setAnnounced(summary), 900)
+    return () => clearTimeout(t)
+  }, [summary])
   const set = (t: Theme) => (setValue(t), setSaid(''))
+  const setIntensity = (next: Theme['intensity']) => set({ ...theme, intensity: next })
+  const setGroup = (g: BrandGroup, x: 'level' | 'on' | 'off') => {
+    const groupsNext = { ...theme.intensity?.groups }
+    if (x === 'level') delete groupsNext[g]
+    else groupsNext[g] = x
+    setIntensity({ ...theme.intensity, groups: Object.keys(groupsNext).length ? groupsNext : undefined })
+  }
   const setColor = (key: keyof ThemeColors, hex: string | undefined) => {
     const colors = { ...theme.colors }
     if (hex === undefined) delete colors[key]
@@ -162,6 +159,24 @@ export function ThemeEditor({ path }: { path: string }) {
                   ) : null}
                 </div>
                 <span style={{ fontSize: '.85em', color: 'var(--theme-elevation-650)' }}>{r.hint}</span>
+                {(() => {
+                  const f = fails.find((x) => x.role === r.key && x.suggest)
+                  const n = fails.filter((x) => x.role === r.key).length
+                  if (!n) return null
+                  return (
+                    <span style={{ ...row, gap: 6, fontSize: '.85em' }}>
+                      <span aria-hidden="true" style={{ color: 'var(--theme-error-500)', fontWeight: 700 }}>⚠</span>
+                      <span>
+                        {n} contrast {n === 1 ? 'check fails' : 'checks fail'} with this color.{f ? <> Better for accessibility: <code>{f.suggest}</code>.</> : null}
+                      </span>
+                      {f ? (
+                        <button type="button" className="btn btn--style-secondary btn--size-small" style={{ margin: 0 }} onClick={() => setColor(r.key, f.suggest!)}>
+                          Use {f.suggest}
+                        </button>
+                      ) : null}
+                    </span>
+                  )
+                })()}
               </div>
             )
           })}
@@ -176,44 +191,120 @@ export function ThemeEditor({ path }: { path: string }) {
         </div>
       </section>
 
-      <section style={box} aria-labelledby={`${id}-preview`}>
-        <h3 id={`${id}-preview`} style={{ margin: '0 0 10px' }}>Preview</h3>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Preview v={tk.light} label="Light" />
-          <Preview v={tk.dark} label="Dark" />
+      <section style={box} aria-labelledby={`${id}-brand`}>
+        <h3 id={`${id}-brand`} style={{ margin: '0 0 10px' }}>Brand intensity and accessibility</h3>
+        <div style={{ display: 'grid', gap: 6, maxWidth: 520 }}>
+          <label htmlFor={`${id}-level`} style={{ fontWeight: 600 }}>
+            How much of the site carries the brand colors
+          </label>
+          <input
+            id={`${id}-level`}
+            type="range"
+            min={0}
+            max={INTENSITY_LEVELS.length - 1}
+            step={1}
+            list={`${id}-levels`}
+            value={INTENSITY_LEVELS.indexOf(level)}
+            aria-valuetext={INTENSITY_LABELS[level]}
+            onChange={(e) => setIntensity({ ...theme.intensity, level: INTENSITY_LEVELS[Number(e.target.value)] })}
+            style={{ width: '100%', minHeight: 32 }}
+          />
+          <datalist id={`${id}-levels`}>
+            {INTENSITY_LEVELS.map((l, i) => (
+              <option key={l} value={i} label={INTENSITY_LABELS[l]} />
+            ))}
+          </datalist>
+          <div aria-hidden="true" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.85em', color: 'var(--theme-elevation-650)' }}>
+            {INTENSITY_LEVELS.map((l) => (
+              <span key={l} style={{ fontWeight: l === level ? 700 : 400 }}>{INTENSITY_LABELS[l]}</span>
+            ))}
+          </div>
+          <p style={{ margin: 0 }}>
+            <strong>{INTENSITY_LABELS[level]}:</strong> {BRAND_GROUPS.filter((g) => groups[g.id]).map((g) => g.label.toLowerCase()).join(', ') || 'no brand colors, plain everywhere'}.
+          </p>
         </div>
+        <details style={{ marginTop: 10 }}>
+          <summary style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center' }}>Set each kind of element</summary>
+          <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', marginTop: 6 }}>
+            {BRAND_GROUPS.map((g) => (
+              <div key={g.id} style={{ display: 'grid', gap: 4 }}>
+                <label htmlFor={`${id}-g-${g.id}`} style={{ fontWeight: 600 }}>{g.label}</label>
+                <select id={`${id}-g-${g.id}`} aria-describedby={`${id}-gh-${g.id}`} style={input} value={theme.intensity?.groups?.[g.id] ?? 'level'} onChange={(e) => setGroup(g.id, e.target.value as 'level' | 'on' | 'off')}>
+                  <option value="level">Follow the level ({INTENSITY_LEVELS.indexOf(level) >= INTENSITY_LEVELS.indexOf(g.from) ? 'on' : 'off'} at {INTENSITY_LABELS[level]})</option>
+                  <option value="on">Always on</option>
+                  <option value="off">Always off</option>
+                </select>
+                <span id={`${id}-gh-${g.id}`} style={{ fontSize: '.85em', color: 'var(--theme-elevation-650)' }}>{g.hint}</span>
+              </div>
+            ))}
+          </div>
+        </details>
+        <fieldset style={{ border: 0, padding: 0, margin: '14px 0 0', display: 'grid', gap: 6 }}>
+          <legend style={{ fontWeight: 600, padding: 0, marginBottom: 6 }}>Accessibility</legend>
+          <label style={row}>
+            <input type="radio" name={`${id}-a11y`} checked={theme.accessibility !== 'exact'} onChange={() => set({ ...theme, accessibility: undefined })} />
+            Adjust colors for accessibility (recommended): colors that carry text are moved, lightness only, until they pass WCAG AA.
+          </label>
+          <label style={row}>
+            <input type="radio" name={`${id}-a11y`} checked={theme.accessibility === 'exact'} onChange={() => set({ ...theme, accessibility: 'exact' })} />
+            Use my exact colors: nothing is moved; anything that falls short is marked, with a better color to switch to.
+          </label>
+        </fieldset>
       </section>
 
-      <section style={box} aria-labelledby={`${id}-contrast`}>
-        <h3 id={`${id}-contrast`} style={{ margin: '0 0 6px' }}>Contrast</h3>
-        <p role="status" style={{ margin: '0 0 8px' }}>{fails.length ? `${fails.length} pairs fall short of WCAG AA.` : 'Every pair passes WCAG AA, in light and dark.'}</p>
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              {['Pair', 'Light', 'Dark', 'Needs'].map((h) => (
-                <th key={h} style={{ textAlign: 'left', padding: '4px 8px', borderBottom: '1px solid var(--theme-elevation-150)' }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {report
-              .filter((r) => r.mode === 'light')
-              .map((r) => {
-                const dark = report.find((d) => d.mode === 'dark' && d.pair === r.pair)!
-                const cell = (x: typeof r) => `${x.ratio}:1 ${x.pass ? '✓ passes' : '✗ too low'}`
-                return (
-                  <tr key={r.pair}>
-                    <td style={{ padding: '4px 8px' }}>{r.pair}</td>
-                    <td style={{ padding: '4px 8px' }}>{cell(r)}</td>
-                    <td style={{ padding: '4px 8px' }}>{cell(dark)}</td>
-                    <td style={{ padding: '4px 8px' }}>{r.min}:1</td>
-                  </tr>
-                )
-              })}
-          </tbody>
-        </table>
+      <section style={box} aria-labelledby={`${id}-kit`}>
+        <h3 id={`${id}-kit`} style={{ margin: '0 0 6px' }}>UI kit</h3>
+        <p style={{ margin: '0 0 10px', color: 'var(--theme-elevation-650)' }}>How the theme looks on common parts of a site. A red mark means a contrast check fails there; open it for a better color.</p>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <UiKit v={tk.light} mode="light" report={report} highlight={highlight} onUse={setColor} />
+          <UiKit v={tk.dark} mode="dark" report={report} highlight={highlight} onUse={setColor} />
+        </div>
+        <p role="status" aria-live="polite" style={{ margin: '12px 0 0', fontWeight: 600 }}>
+          {announced}
+        </p>
+        <details style={{ marginTop: 8 }}>
+          <summary style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center' }}>WCAG scores, live</summary>
+          <p style={{ margin: '4px 0 8px', fontSize: '.9em', color: 'var(--theme-elevation-650)' }}>Choose a row to point at that element in the kit. Text needs 4.5:1 (AA) or 7:1 (AAA); buttons, borders and focus rings need 3:1.</p>
+          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+            <thead>
+              <tr>
+                {['Element', 'Light', 'Dark', 'Needs'].map((h) => (
+                  <th key={h} scope="col" style={{ textAlign: 'start', padding: '4px 8px', borderBottom: '1px solid var(--theme-elevation-150)' }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {report
+                .filter((r) => r.mode === 'light')
+                .map((r) => {
+                  const dark = report.find((d) => d.mode === 'dark' && d.id === r.id)!
+                  const cell = (x: ContrastCheck) => {
+                    const g = grade(x)
+                    return (
+                      <td style={{ padding: '4px 8px', whiteSpace: 'nowrap' }}>
+                        <span style={{ color: g.color, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{x.ratio}:1</span> <span>{g.text}</span>
+                      </td>
+                    )
+                  }
+                  const on = highlight === r.id
+                  return (
+                    <tr key={r.id} style={{ background: on ? 'var(--theme-elevation-100)' : undefined }}>
+                      <th scope="row" style={{ padding: 0, textAlign: 'start', fontWeight: 400 }}>
+                        <button type="button" aria-pressed={on} onClick={() => setHighlight(on ? null : r.id)} style={{ all: 'unset', cursor: 'pointer', display: 'block', padding: '6px 8px', minHeight: 24, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                          {r.pair}
+                        </button>
+                      </th>
+                      {cell(r)}
+                      {cell(dark)}
+                      <td style={{ padding: '4px 8px' }}>{r.min}:1</td>
+                    </tr>
+                  )
+                })}
+            </tbody>
+          </table>
+        </details>
       </section>
 
       <section style={box} aria-labelledby={`${id}-io`}>

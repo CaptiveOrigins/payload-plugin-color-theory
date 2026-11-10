@@ -16,10 +16,35 @@ export type ThemeColors = {
   warning?: string
   error?: string
 }
+/** How strongly the brand colors show across the site, from Off to Bold. */
+export const INTENSITY_LEVELS = ['off', 'subtle', 'balanced', 'bold'] as const
+export type IntensityLevel = (typeof INTENSITY_LEVELS)[number]
+export const INTENSITY_LABELS: Record<IntensityLevel, string> = { off: 'Off', subtle: 'Subtle', balanced: 'Balanced', bold: 'Bold' }
+
+/**
+ * The kinds of element that can carry the brand colors, and the level each one switches on at. Higher levels
+ * put the brand on more of what's on screen: Off none, Subtle 1 of 5, Balanced 3 of 5, Bold all 5.
+ */
+export const BRAND_GROUPS = [
+  { id: 'buttons', label: 'Button fills', hint: 'Main buttons in the primary color, or in plain dark text color.', from: 'subtle' },
+  { id: 'header', label: 'Header', hint: 'A dark brand bar with a primary-color rule, or a plain header.', from: 'balanced' },
+  { id: 'badges', label: 'Badge colors', hint: 'Badges tinted by meaning, or plain gray.', from: 'balanced' },
+  { id: 'bands', label: 'Card bands', hint: 'A thin primary-to-secondary band across the top of cards.', from: 'bold' },
+  { id: 'washes', label: 'Intro washes', hint: 'A soft brand wash behind page intros.', from: 'bold' },
+] as const satisfies readonly { id: string; label: string; hint: string; from: IntensityLevel }[]
+export type BrandGroup = (typeof BRAND_GROUPS)[number]['id']
+
 export type Theme = {
   format: 'color-theory/1'
   name: string
   colors: ThemeColors
+  /**
+   * `adjust` (default): colors that carry text are moved, lightness only, until they pass WCAG AA.
+   * `exact`: the chosen colors are used as they are, and the contrast report says what falls short.
+   */
+  accessibility?: 'adjust' | 'exact'
+  /** Brand intensity: one level for the theme, and optional on/off overrides per kind of element. Default Bold. */
+  intensity?: { level?: IntensityLevel; groups?: Partial<Record<BrandGroup, 'on' | 'off'>> }
   /** How it was made, if from a harmony (kept so the editor can reopen it). */
   harmony?: { scheme: Scheme; base: keyof ThemeColors }
   /** Corner radii in px. */
@@ -60,6 +85,17 @@ export function completeColors(t: Theme): Required<ThemeColors> {
 
 export type Tokens = Record<string, string>
 
+/** Which kinds of element carry the brand colors, from the level and any overrides. */
+export function brandGroups(t: Theme): Record<BrandGroup, boolean> {
+  const level = INTENSITY_LEVELS.indexOf(t.intensity?.level ?? 'bold')
+  return Object.fromEntries(
+    BRAND_GROUPS.map((g) => {
+      const o = t.intensity?.groups?.[g.id]
+      return [g.id, o ? o === 'on' : level >= INTENSITY_LEVELS.indexOf(g.from)]
+    }),
+  ) as Record<BrandGroup, boolean>
+}
+
 /**
  * The site's `--palette-*` tokens for light and dark. Colors that carry text are nudged until they pass
  * WCAG AA (4.5:1 for text, 3:1 for large UI like buttons and focus rings); the brand hue is always kept.
@@ -67,6 +103,9 @@ export type Tokens = Record<string, string>
 export function tokens(t: Theme): { light: Tokens; dark: Tokens } {
   const c = completeColors(t)
   const n = scale(c.neutral, { maxChroma: 0.03 })
+  const deep = scale(c.neutral, { maxChroma: 0.06 })
+  const fix = t.accessibility !== 'exact'
+  const on = brandGroups(t)
   const radius = { md: `${t.radius?.md ?? 8}px`, lg: `${t.radius?.lg ?? 14}px` }
   const mode = (surface: string, raised: string, sunken: string, text: string, muted: string, border: string, borderSoft: string, dark: boolean): Tokens => {
     // Text and fills must work on every surface they can sit on: the page, cards and sunken areas.
@@ -76,8 +115,11 @@ export function tokens(t: Theme): { light: Tokens; dark: Tokens } {
       for (let pass = 0; pass < 3; pass++) for (const bg of surfaces) out = ensureContrast(out, bg, ratio)
       return out
     }
-    const strong = (hex: string) => against(hex, 3)
+    // Neutral-derived colors (muted text, the header) are always adjusted: they're worked out, not chosen.
+    // The role colors someone picked are adjusted only in `adjust` mode.
+    const strong = (hex: string) => (fix ? against(hex, 3) : hex)
     const readable = (hex: string) => against(hex, 4.5)
+    const roleReadable = (hex: string) => (fix ? readable(hex) : hex)
     const soft = (hex: string) => oklchToHex({ ...hexToOklch(hex), l: dark ? 0.3 : 0.95, c: Math.min(hexToOklch(hex).c, dark ? 0.06 : 0.04) })
     const out: Tokens = {
       '--palette-surface': surface,
@@ -94,20 +136,34 @@ export function tokens(t: Theme): { light: Tokens; dark: Tokens } {
       // A fill stands out from the page (3:1), and its text reads on it (4.5:1). A mid-tone where neither white
       // nor black text reaches 4.5 is moved, lightness only, away from its text color until it does.
       let fill = strong(c[role])
-      const on = onColor(fill)
-      if (contrast(on, fill) < 4.5) fill = ensureContrast(fill, on, 4.5)
+      const ink = onColor(fill)
+      if (fix && contrast(ink, fill) < 4.5) fill = ensureContrast(fill, ink, 4.5)
       out[`--palette-${role}`] = fill
-      out[`--palette-on-${role}`] = on
+      out[`--palette-on-${role}`] = ink
       // Role text sits on the page, cards, sunken areas and its own soft fill (badges, notices): readable on all.
       const softFill = soft(c[role])
-      let text = readable(c[role])
-      for (let pass = 0; pass < 3; pass++) text = ensureContrast(against(text, 4.5), softFill, 4.5)
+      let text = roleReadable(c[role])
+      if (fix) for (let pass = 0; pass < 3; pass++) text = ensureContrast(against(text, 4.5), softFill, 4.5)
       out[`--palette-${role}-text`] = text
       out[`--palette-${role}-soft`] = softFill
     }
     out['--palette-surface-hover'] = out['--palette-primary-soft']!
     out['--palette-focus'] = out['--palette-primary']!
     out['--palette-link'] = out['--palette-primary-text']!
+
+    // Brand intensity: each kind of element takes the brand colors or plain ones.
+    out['--palette-button'] = on.buttons ? out['--palette-primary']! : text
+    out['--palette-on-button'] = on.buttons ? out['--palette-on-primary']! : raised
+    const headerBg = dark ? deep[850]! : deep[800]!
+    out['--palette-header'] = on.header ? headerBg : surface
+    out['--palette-on-header'] = on.header ? ensureContrast(dark ? n[50]! : n[0]!, headerBg, 4.5) : text
+    out['--palette-header-rule'] = on.header ? out['--palette-primary']! : border
+    for (const role of ['primary', 'secondary', 'accent'] as const) {
+      out[`--palette-badge-${role}`] = on.badges ? out[`--palette-${role}-soft`]! : sunken
+      out[`--palette-on-badge-${role}`] = on.badges ? out[`--palette-${role}-text`]! : out['--palette-text-muted']!
+    }
+    out['--palette-band'] = on.bands ? `linear-gradient(90deg, ${out['--palette-primary']}, ${out['--palette-secondary']})` : 'transparent'
+    out['--palette-wash'] = on.washes ? `linear-gradient(135deg, ${out['--palette-primary-soft']}, ${out['--palette-secondary-soft']})` : surface
     return out
   }
   return {
@@ -133,37 +189,79 @@ export function payloadAdminVariables(t: Theme): Tokens {
   return out
 }
 
-export type ContrastCheck = { mode: 'light' | 'dark'; pair: string; ratio: number; min: number; pass: boolean }
+/** One text or UI pair the theme produces. `role` is the chosen color it depends on, if any. */
+export type ContrastPair = { id: string; label: string; fg: string; bg: string; min: 3 | 4.5; role?: keyof ThemeColors; variant?: 'fill' | 'text' }
 
-/** Every text and UI pair the theme produces, with its contrast ratio against WCAG AA. */
+export const CONTRAST_PAIRS: ContrastPair[] = [
+  { id: 'text-page', label: 'Text on the page', fg: '--palette-text', bg: '--palette-surface', min: 4.5 },
+  { id: 'text-cards', label: 'Text on cards', fg: '--palette-text', bg: '--palette-surface-raised', min: 4.5 },
+  { id: 'muted-page', label: 'Muted text on the page', fg: '--palette-text-muted', bg: '--palette-surface', min: 4.5 },
+  { id: 'muted-cards', label: 'Muted text on cards', fg: '--palette-text-muted', bg: '--palette-surface-raised', min: 4.5 },
+  { id: 'header', label: 'Header text', fg: '--palette-on-header', bg: '--palette-header', min: 4.5 },
+  { id: 'links-page', label: 'Links on the page', fg: '--palette-link', bg: '--palette-surface', min: 4.5, role: 'primary', variant: 'text' },
+  { id: 'links-cards', label: 'Links on cards', fg: '--palette-link', bg: '--palette-surface-raised', min: 4.5, role: 'primary', variant: 'text' },
+  { id: 'button', label: 'Main buttons', fg: '--palette-on-button', bg: '--palette-button', min: 4.5 },
+  { id: 'primary-fill', label: 'Primary fills', fg: '--palette-on-primary', bg: '--palette-primary', min: 4.5, role: 'primary', variant: 'fill' },
+  { id: 'secondary-fill', label: 'Secondary fills', fg: '--palette-on-secondary', bg: '--palette-secondary', min: 4.5, role: 'secondary', variant: 'fill' },
+  { id: 'accent-fill', label: 'Accent fills', fg: '--palette-on-accent', bg: '--palette-accent', min: 4.5, role: 'accent', variant: 'fill' },
+  { id: 'secondary-outline', label: 'Secondary button text', fg: '--palette-secondary-text', bg: '--palette-surface', min: 4.5, role: 'secondary', variant: 'text' },
+  { id: 'primary-ui', label: 'Primary against the page (UI)', fg: '--palette-primary', bg: '--palette-surface', min: 3, role: 'primary', variant: 'fill' },
+  { id: 'focus', label: 'Focus ring', fg: '--palette-focus', bg: '--palette-surface', min: 3, role: 'primary', variant: 'fill' },
+  { id: 'field-border', label: 'Form field border', fg: '--palette-text-muted', bg: '--palette-surface-raised', min: 3 },
+  { id: 'badge-primary', label: 'Primary badge', fg: '--palette-on-badge-primary', bg: '--palette-badge-primary', min: 4.5, role: 'primary', variant: 'text' },
+  { id: 'badge-secondary', label: 'Secondary badge', fg: '--palette-on-badge-secondary', bg: '--palette-badge-secondary', min: 4.5, role: 'secondary', variant: 'text' },
+  { id: 'badge-accent', label: 'Accent badge', fg: '--palette-on-badge-accent', bg: '--palette-badge-accent', min: 4.5, role: 'accent', variant: 'text' },
+  { id: 'error-text', label: 'Error text', fg: '--palette-error-text', bg: '--palette-surface', min: 4.5, role: 'error', variant: 'text' },
+  { id: 'success-badge', label: 'Success badge', fg: '--palette-success-text', bg: '--palette-success-soft', min: 4.5, role: 'success', variant: 'text' },
+  { id: 'warning-badge', label: 'Warning badge', fg: '--palette-warning-text', bg: '--palette-warning-soft', min: 4.5, role: 'warning', variant: 'text' },
+  { id: 'error-badge', label: 'Error alert', fg: '--palette-error-text', bg: '--palette-error-soft', min: 4.5, role: 'error', variant: 'text' },
+]
+
+export type ContrastCheck = {
+  id: string
+  mode: 'light' | 'dark'
+  pair: string
+  ratio: number
+  min: number
+  pass: boolean
+  /** WCAG AAA: 7:1 for text, 4.5:1 for large text and UI. */
+  aaa: boolean
+  role?: keyof ThemeColors
+  /** For a failing pair: the nearest color for `role` that passes it (lightness only), if there is one. */
+  suggest?: string
+}
+
+/** Every text and UI pair the theme produces, with its contrast ratio against WCAG AA, and a fix for each failure. */
 export function contrastReport(t: Theme): ContrastCheck[] {
   const out: ContrastCheck[] = []
   const tk = tokens(t)
+  const c = completeColors(t)
   for (const mode of ['light', 'dark'] as const) {
     const v = tk[mode]
-    const pairs: [string, string, string, number][] = [
-      ['Text on the page', '--palette-text', '--palette-surface', 4.5],
-      ['Text on cards', '--palette-text', '--palette-surface-raised', 4.5],
-      ['Muted text on the page', '--palette-text-muted', '--palette-surface', 4.5],
-      ['Links on the page', '--palette-link', '--palette-surface', 4.5],
-      ['Links on cards', '--palette-link', '--palette-surface-raised', 4.5],
-      ['Muted text on cards', '--palette-text-muted', '--palette-surface-raised', 4.5],
-      ['Primary buttons', '--palette-on-primary', '--palette-primary', 4.5],
-      ['Secondary buttons', '--palette-on-secondary', '--palette-secondary', 4.5],
-      ['Accent fills', '--palette-on-accent', '--palette-accent', 4.5],
-      ['Primary against the page (UI)', '--palette-primary', '--palette-surface', 3],
-      ['Focus ring', '--palette-focus', '--palette-surface', 3],
-      ['Error text', '--palette-error-text', '--palette-surface', 4.5],
-      ['Success badge', '--palette-success-text', '--palette-success-soft', 4.5],
-      ['Warning badge', '--palette-warning-text', '--palette-warning-soft', 4.5],
-      ['Error badge', '--palette-error-text', '--palette-error-soft', 4.5],
-    ]
-    for (const [pair, fg, bg, min] of pairs) {
-      const ratio = Math.round(contrast(v[fg]!, v[bg]!) * 100) / 100
-      out.push({ mode, pair, ratio, min, pass: ratio >= min })
+    for (const p of CONTRAST_PAIRS) {
+      const ratio = Math.round(contrast(v[p.fg]!, v[p.bg]!) * 100) / 100
+      const pass = ratio >= p.min
+      const check: ContrastCheck = { id: p.id, mode, pair: p.label, ratio, min: p.min, pass, aaa: ratio >= (p.min === 3 ? 4.5 : 7), ...(p.role ? { role: p.role } : {}) }
+      if (!pass && p.role) {
+        const s = suggestFor(t, c[p.role], p, mode)
+        if (s) check.suggest = s
+      }
+      out.push(check)
     }
   }
   return out
+}
+
+/** The nearest color (lightness only) that makes one pair pass in one mode, checked by rebuilding the tokens. */
+function suggestFor(t: Theme, start: string, p: ContrastPair, mode: 'light' | 'dark'): string | undefined {
+  let hex = start
+  for (let pass = 0; pass < 4; pass++) {
+    const v = tokens({ ...t, colors: { ...t.colors, [p.role!]: hex } })[mode]
+    if (contrast(v[p.fg]!, v[p.bg]!) >= p.min) return hex === start ? undefined : hex
+    // Text moves away from its background; a fill moves away from the text drawn on it.
+    hex = p.variant === 'fill' ? ensureContrast(hex, v[p.fg]!, p.min + 0.05) : ensureContrast(hex, v[p.bg]!, p.min + 0.05)
+  }
+  return undefined
 }
 
 /**
@@ -209,6 +307,18 @@ export function parseTheme(input: unknown): { theme: Theme | null; problems: str
   if (scheme !== undefined && !['monochromatic', 'analogous', 'complementary', 'split-complementary', 'triadic', 'tetradic', 'square'].includes(String(scheme))) problems.push(`Unknown harmony "${String(scheme)}".`)
   const radius = o.radius as { md?: unknown; lg?: unknown } | undefined
   for (const k of ['md', 'lg'] as const) if (radius?.[k] !== undefined && !(typeof radius[k] === 'number' && radius[k]! >= 0 && radius[k]! <= 64)) problems.push(`Radius "${k}" must be a number of pixels from 0 to 64.`)
+  if (o.accessibility !== undefined && o.accessibility !== 'adjust' && o.accessibility !== 'exact') problems.push('"accessibility" is "adjust" or "exact".')
+  const intensity = o.intensity as { level?: unknown; groups?: Record<string, unknown> } | undefined
+  if (intensity !== undefined) {
+    if (!intensity || typeof intensity !== 'object') problems.push('"intensity" is an object with a level and optional groups.')
+    else {
+      if (intensity.level !== undefined && !INTENSITY_LEVELS.includes(intensity.level as IntensityLevel)) problems.push(`Unknown intensity level "${String(intensity.level)}"; use ${INTENSITY_LEVELS.join(', ')}.`)
+      for (const [k, x] of Object.entries(intensity.groups ?? {})) {
+        if (!BRAND_GROUPS.some((g) => g.id === k)) problems.push(`Unknown intensity group "${k}".`)
+        else if (x !== 'on' && x !== 'off') problems.push(`Intensity group "${k}" is "on" or "off".`)
+      }
+    }
+  }
   if (problems.length) return { theme: null, problems }
   const norm = (h: unknown) => (typeof h === 'string' ? (h.trim().startsWith('#') ? h.trim() : `#${h.trim()}`).toLowerCase() : undefined)
   const theme: Theme = {
@@ -217,6 +327,8 @@ export function parseTheme(input: unknown): { theme: Theme | null; problems: str
     colors: Object.fromEntries(Object.entries(colors).map(([k, h]) => [k, norm(h)])) as unknown as ThemeColors,
     ...(o.harmony ? { harmony: o.harmony as Theme['harmony'] } : {}),
     ...(radius ? { radius: radius as Theme['radius'] } : {}),
+    ...(o.accessibility ? { accessibility: o.accessibility as Theme['accessibility'] } : {}),
+    ...(intensity ? { intensity: { ...(intensity.level ? { level: intensity.level as IntensityLevel } : {}), ...(intensity.groups && Object.keys(intensity.groups).length ? { groups: intensity.groups as NonNullable<Theme['intensity']>['groups'] } : {}) } } : {}),
   }
   return { theme, problems: [] }
 }

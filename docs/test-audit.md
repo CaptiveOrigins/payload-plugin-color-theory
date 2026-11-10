@@ -2,6 +2,27 @@
 
 Kept by this repo's owning session, per `~/Code/CLAUDE.md`, "Test self-audits". Newest first.
 
+## 2026-11-10: brand intensity, exact colors, UI kit
+
+37 tests: core 20, plugin 6, mode 5, editor 6 (`test/editor.test.tsx`, jsdom, Payload's `useField` replaced with React state).
+
+| Promise | Covered by |
+| --- | --- |
+| Levels turn on the right kinds of element; Bold by default; overrides win | core: brand intensity |
+| Brand-off groups get plain tokens, brand-on groups brand ones | core: brand intensity |
+| **Every level and every override passes WCAG AA, light and dark, for every preset** | core: 7 presets × 4 levels × 3 override sets |
+| Exact mode keeps chosen colors and reports failures; adjust mode fixes the same theme | core: exact colors |
+| Each suggestion, applied, makes its check pass, keeping the hue | core: exact colors |
+| Neutral-derived text (body, muted, header) passes even in exact mode | core: exact colors |
+| New settings are validated with reasons; old themes still read | core: reading intensity |
+| Kit in light and dark; no warnings when all pass; table closed by default | editor |
+| Warning opens a suggestion; "Use this" applies it, keeps exact mode, and the check passes; Escape closes | editor |
+| Table rows grade in words; choosing a row highlights the element in both modes | editor |
+| Slider, overrides and the switch change the saved theme | editor |
+| Polite announcement after a pause, not on every change | editor |
+
+Gaps skipped: the kit's look and the warning popover's placement need a browser. They'll be checked when the site is wired to the plugin, and are noted in the README until then.
+
 ## 2026-11-10: plugin, editor and light/dark mode
 
 24 tests: `test/core.test.ts` (13), `test/plugin.test.ts` (6), `test/mode.test.tsx` (5).
