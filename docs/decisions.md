@@ -10,3 +10,4 @@ Dated decisions for this repo, newest last.
 - 2026-11-10 (build): **contrast is checked on every surface text can sit on**: page, cards, sunken areas, and for status text its own soft badge fill. The browser trial found links and badges that passed on the page but not on cards or badges.
 - 2026-11-10 (build): **the CSS endpoints revalidate** (`no-cache` with an ETag) instead of caching for minutes, so a theme change shows on the next load. The trial showed a stale admin.css after a change.
 - 2026-11-10 (build): **one theme per install**, not per site. Per-site themes wait for a real need.
+- 2026-11-10 (Helm, checked against ~/Code/CLAUDE.md): **MIT**, Copyright (c) 2026 Captive Origins, as for every general Payload plugin. First-public-push audit: `docs/first-public-push-audit.md` (clean). Going public, the first publish and npm trust are the owner's steps.

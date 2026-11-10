@@ -1,8 +1,8 @@
 # payload-plugin-color-theory
 
-Color Theory for Payload: build site and admin themes from color harmonies (complementary, triadic, tetradic and more), check contrast in light and dark, switch between them, and import or export themes as JSON with hex values.
+Color Theory for Payload: build site and admin themes from color harmonies (complementary, triadic, tetradic and more), with contrast checked in light and dark, an Auto, Light and Dark switch, and JSON import and export with hex values.
 
-**Status:** early, private. 24 tests pass. Tried on a local copy of the Captive Origins site in Chromium, light and dark:
+**Status:** early, 0.x. 24 tests pass. Tried on a local copy of the Captive Origins site in Chromium, light and dark:
 
 - the editor works: presets, harmonies, import, export and save;
 - the admin takes on a saved theme's colors;
@@ -36,6 +36,10 @@ It hasn't been used on a live site, and the site-side light/dark switch has only
 ```
 
 ## Install
+
+```bash
+npm install @captiveorigins/payload-plugin-color-theory
+```
 
 ```ts
 // payload.config.ts
@@ -94,4 +98,4 @@ npm run build
 
 ## License
 
-Not decided yet. Private repos carry no license.
+MIT. See `LICENSE`.

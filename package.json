@@ -1,8 +1,7 @@
 {
   "name": "@captiveorigins/payload-plugin-color-theory",
   "version": "0.1.0",
-  "private": true,
-  "description": "Color Theory for Payload: build site and admin themes from color harmonies (complementary, triadic, tetradic and more), check contrast, and import or export themes as JSON with hex values.",
+  "description": "Color Theory for Payload: build site and admin themes from color harmonies (complementary, triadic, tetradic and more), with contrast checked in light and dark, an Auto, Light and Dark switch, and JSON import and export with hex values.",
   "keywords": [
     "payload",
     "payload-plugin",
@@ -13,8 +12,18 @@
     "palette",
     "contrast",
     "oklch",
-    "design-tokens"
+    "design-tokens",
+    "dark-mode"
   ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CaptiveOrigins/payload-plugin-color-theory.git"
+  },
+  "homepage": "https://github.com/CaptiveOrigins/payload-plugin-color-theory#readme",
+  "bugs": {
+    "url": "https://github.com/CaptiveOrigins/payload-plugin-color-theory/issues"
+  },
   "type": "module",
   "exports": {
     ".": {
@@ -38,7 +47,8 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=22"
