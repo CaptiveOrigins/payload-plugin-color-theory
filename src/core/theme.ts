@@ -69,8 +69,15 @@ export function tokens(t: Theme): { light: Tokens; dark: Tokens } {
   const n = scale(c.neutral, { maxChroma: 0.03 })
   const radius = { md: `${t.radius?.md ?? 8}px`, lg: `${t.radius?.lg ?? 14}px` }
   const mode = (surface: string, raised: string, sunken: string, text: string, muted: string, border: string, borderSoft: string, dark: boolean): Tokens => {
-    const strong = (hex: string) => ensureContrast(hex, surface, 3)
-    const readable = (hex: string) => ensureContrast(hex, surface, 4.5)
+    // Text and fills must work on every surface they can sit on: the page, cards and sunken areas.
+    const surfaces = [surface, raised, sunken]
+    const against = (hex: string, ratio: number) => {
+      let out = hex
+      for (let pass = 0; pass < 3; pass++) for (const bg of surfaces) out = ensureContrast(out, bg, ratio)
+      return out
+    }
+    const strong = (hex: string) => against(hex, 3)
+    const readable = (hex: string) => against(hex, 4.5)
     const soft = (hex: string) => oklchToHex({ ...hexToOklch(hex), l: dark ? 0.3 : 0.95, c: Math.min(hexToOklch(hex).c, dark ? 0.06 : 0.04) })
     const out: Tokens = {
       '--palette-surface': surface,
@@ -91,8 +98,12 @@ export function tokens(t: Theme): { light: Tokens; dark: Tokens } {
       if (contrast(on, fill) < 4.5) fill = ensureContrast(fill, on, 4.5)
       out[`--palette-${role}`] = fill
       out[`--palette-on-${role}`] = on
-      out[`--palette-${role}-text`] = readable(c[role])
-      out[`--palette-${role}-soft`] = soft(c[role])
+      // Role text sits on the page, cards, sunken areas and its own soft fill (badges, notices): readable on all.
+      const softFill = soft(c[role])
+      let text = readable(c[role])
+      for (let pass = 0; pass < 3; pass++) text = ensureContrast(against(text, 4.5), softFill, 4.5)
+      out[`--palette-${role}-text`] = text
+      out[`--palette-${role}-soft`] = softFill
     }
     out['--palette-surface-hover'] = out['--palette-primary-soft']!
     out['--palette-focus'] = out['--palette-primary']!
@@ -135,12 +146,17 @@ export function contrastReport(t: Theme): ContrastCheck[] {
       ['Text on cards', '--palette-text', '--palette-surface-raised', 4.5],
       ['Muted text on the page', '--palette-text-muted', '--palette-surface', 4.5],
       ['Links on the page', '--palette-link', '--palette-surface', 4.5],
+      ['Links on cards', '--palette-link', '--palette-surface-raised', 4.5],
+      ['Muted text on cards', '--palette-text-muted', '--palette-surface-raised', 4.5],
       ['Primary buttons', '--palette-on-primary', '--palette-primary', 4.5],
       ['Secondary buttons', '--palette-on-secondary', '--palette-secondary', 4.5],
       ['Accent fills', '--palette-on-accent', '--palette-accent', 4.5],
       ['Primary against the page (UI)', '--palette-primary', '--palette-surface', 3],
       ['Focus ring', '--palette-focus', '--palette-surface', 3],
       ['Error text', '--palette-error-text', '--palette-surface', 4.5],
+      ['Success badge', '--palette-success-text', '--palette-success-soft', 4.5],
+      ['Warning badge', '--palette-warning-text', '--palette-warning-soft', 4.5],
+      ['Error badge', '--palette-error-text', '--palette-error-soft', 4.5],
     ]
     for (const [pair, fg, bg, min] of pairs) {
       const ratio = Math.round(contrast(v[fg]!, v[bg]!) * 100) / 100
@@ -150,11 +166,22 @@ export function contrastReport(t: Theme): ContrastCheck[] {
   return out
 }
 
-/** CSS for a theme: light tokens on `:root`, dark ones under the dark selector, plus the admin's variables if asked. */
-export function themeCss(t: Theme, opts: { selector?: string; darkSelector?: string; admin?: boolean } = {}): string {
+/**
+ * CSS for a theme: light tokens on `:root`, dark ones under the dark selector, and, unless `auto` is off,
+ * dark ones again when the device prefers dark and no light choice is set (`[data-theme='light']` opts out).
+ * With `admin`, Payload's admin variables too (Payload flips them for its own dark mode).
+ */
+export function themeCss(t: Theme, opts: { selector?: string; darkSelector?: string; lightSelector?: string; admin?: boolean; auto?: boolean } = {}): string {
   const tk = tokens(t)
-  const block = (sel: string, v: Tokens) => `${sel} {\n${Object.entries(v).map(([k, x]) => `  ${k}: ${x};`).join('\n')}\n}`
-  return [block(opts.selector ?? ':root', tk.light), block(opts.darkSelector ?? "[data-theme='dark']", tk.dark), ...(opts.admin ? [block(':root', payloadAdminVariables(t))] : [])].join('\n')
+  const block = (sel: string, v: Tokens, indent = '') => `${indent}${sel} {\n${Object.entries(v).map(([k, x]) => `${indent}  ${k}: ${x};`).join('\n')}\n${indent}}`
+  const root = opts.selector ?? ':root'
+  const light = opts.lightSelector ?? "[data-theme='light']"
+  return [
+    block(root, tk.light),
+    block(opts.darkSelector ?? "[data-theme='dark']", tk.dark),
+    ...(opts.auto === false ? [] : [`@media (prefers-color-scheme: dark) {\n${block(`${root}:not(${light})`, tk.dark, '  ')}\n}`]),
+    ...(opts.admin ? [block(':root', payloadAdminVariables(t))] : []),
+  ].join('\n')
 }
 
 /** Reads a theme from JSON (a string or parsed), strictly: hex colors only, known fields only. */

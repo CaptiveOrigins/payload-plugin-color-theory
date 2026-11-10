@@ -78,6 +78,15 @@ describe('scales and tokens', () => {
     expect(css).toContain('--color-base-500:')
     expect(tokens(PRESETS[0]!).light['--palette-surface']).not.toBe(tokens(PRESETS[0]!).dark['--palette-surface'])
   })
+
+  it('in Auto, uses dark when the device prefers it, unless light was chosen; Auto can be turned off', () => {
+    const dark = tokens(PRESETS[0]!).dark['--palette-surface']!
+    const css = themeCss(PRESETS[0]!)
+    const auto = css.slice(css.indexOf('@media (prefers-color-scheme: dark)'))
+    expect(auto).toContain(":root:not([data-theme='light']) {")
+    expect(auto).toContain(`--palette-surface: ${dark};`)
+    expect(themeCss(PRESETS[0]!, { auto: false })).not.toContain('prefers-color-scheme')
+  })
 })
 
 describe('import and export', () => {
