@@ -38,6 +38,16 @@ It hasn't been used on a live site yet. On a local copy of the Captive Origins s
 }
 ```
 
+## On its own, and with others
+
+**On its own.** Color Theory needs only Payload. It adds its own collection, global and CSS endpoints, and your site links the CSS. It doesn't use any other Captive Origins plugin.
+
+**Works with:**
+
+- **Nested Docs Browser** (`@captiveorigins/payload-plugin-nested-docs-browser`): the browser's `--ndb-*` variables fall back to the `--palette-*` tokens Color Theory writes, so it picks up the site's theme with nothing to set. They share token names, not code.
+
+**Family.** Color Theory is in the Theme family, with Stock Images, which is named but not built yet. The families are a working draft that may change.
+
 ## Install
 
 ```bash
