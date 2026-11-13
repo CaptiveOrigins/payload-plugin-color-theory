@@ -17,7 +17,7 @@ It hasn't been used on a live site. The site-side light/dark switch, brand inten
 - **Tokens for the site.** `--palette-*` variables for light and dark: surfaces, text, borders, and for each role a fill, the text on it, a readable text shade and a soft background.
 - **Payload's admin, too.** It gets its own `--color-base-*`, success, warning and error scales, the variables Payload is themed with, so the admin's own dark mode keeps working. Off until you turn it on.
 - **Readable by construction.** Text passes WCAG AA (4.5:1) on every surface it can sit on: the page, cards, sunken areas and its own soft badge background. Fills stand out from the page (3:1). A brand color that doesn't pass is moved in lightness only, keeping its hue. The editor shows every pair with its ratio.
-- **Light, dark and Auto.** The CSS follows `data-theme="light|dark"` on `<html>`. With no choice saved, it follows the device. `@captiveorigins/payload-plugin-color-theory/mode` has the pieces a site needs:
+- **Light, dark and Auto.** The CSS follows `data-theme="light|dark"` on `<html>`. With no choice saved, it follows the device. `@extantape/payload-plugin-color-theory/mode` has the pieces a site needs:
   - `colorModeScript()`: an inline script for `<head>`, so the page never flashes the wrong mode;
   - `ColorModeProvider` and `useColorMode()`: in Auto, these follow the device live;
   - `ColorModeSelector`: an Auto / Light / Dark select you can label in any language.
@@ -41,12 +41,12 @@ It hasn't been used on a live site. The site-side light/dark switch, brand inten
 ## Install
 
 ```bash
-npm install @captiveorigins/payload-plugin-color-theory
+npm install @extantape/payload-plugin-color-theory
 ```
 
 ```ts
 // payload.config.ts
-import { colorTheory } from '@captiveorigins/payload-plugin-color-theory'
+import { colorTheory } from '@extantape/payload-plugin-color-theory'
 
 plugins: [
   colorTheory({
@@ -67,7 +67,7 @@ The CSS is sent with an ETag and `no-cache`. A change shows on the next page loa
 On the site, link the CSS and add the mode script:
 
 ```tsx
-import { colorModeScript, ColorModeProvider, ColorModeSelector } from '@captiveorigins/payload-plugin-color-theory/mode'
+import { colorModeScript, ColorModeProvider, ColorModeSelector } from '@extantape/payload-plugin-color-theory/mode'
 
 <html suppressHydrationWarning>
   <head>

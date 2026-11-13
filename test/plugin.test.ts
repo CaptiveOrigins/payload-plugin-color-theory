@@ -76,6 +76,6 @@ describe('the theme in use', () => {
   })
 
   it('adds the admin provider and leaves other providers alone', () => {
-    expect(payload.config.admin.components.providers).toContainEqual('@captiveorigins/payload-plugin-color-theory/client#AdminThemeStyles')
+    expect(payload.config.admin.components.providers).toContainEqual('@extantape/payload-plugin-color-theory/client#AdminThemeStyles')
   })
 })

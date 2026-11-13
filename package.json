@@ -1,5 +1,5 @@
 {
-  "name": "@captiveorigins/payload-plugin-color-theory",
+  "name": "@extantape/payload-plugin-color-theory",
   "version": "0.1.0",
   "description": "Color Theory for Payload: build site and admin themes from color harmonies (complementary, triadic, tetradic and more), with contrast checked in light and dark, an Auto, Light and Dark switch, and JSON import and export with hex values.",
   "keywords": [
@@ -18,11 +18,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CaptiveOrigins/payload-plugin-color-theory.git"
+    "url": "git+https://github.com/ExtantApe/payload-plugin-color-theory.git"
   },
-  "homepage": "https://github.com/CaptiveOrigins/payload-plugin-color-theory#readme",
+  "homepage": "https://github.com/ExtantApe/payload-plugin-color-theory#readme",
   "bugs": {
-    "url": "https://github.com/CaptiveOrigins/payload-plugin-color-theory/issues"
+    "url": "https://github.com/ExtantApe/payload-plugin-color-theory/issues"
   },
   "type": "module",
   "exports": {
