@@ -28,7 +28,7 @@ function themesCollection(o: ColorTheoryOptions): CollectionConfig {
         name: 'theme',
         type: 'json',
         required: true,
-        admin: { components: { Field: '@captiveorigins/payload-plugin-color-theory/client#ThemeEditor' } },
+        admin: { components: { Field: '@extantape/payload-plugin-color-theory/client#ThemeEditor' } },
         validate: (value: unknown) => {
           const { problems } = parseTheme(value)
           return problems.length ? problems.join(' ') : true
@@ -103,6 +103,6 @@ export const colorTheory =
       collections: [...(config.collections ?? []), themesCollection(o)],
       globals: [...(config.globals ?? []), settingsGlobal(o)],
       endpoints: [...(config.endpoints ?? []), css('site'), css('admin'), presets],
-      admin: { ...admin, components: { ...admin.components, providers: [...(admin.components?.providers ?? []), '@captiveorigins/payload-plugin-color-theory/client#AdminThemeStyles'] } },
+      admin: { ...admin, components: { ...admin.components, providers: [...(admin.components?.providers ?? []), '@extantape/payload-plugin-color-theory/client#AdminThemeStyles'] } },
     }
   }
