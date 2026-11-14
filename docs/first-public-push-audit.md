@@ -12,11 +12,11 @@ Run 2026-11-10 by the Web Platform session, before the repo goes public (per ~/C
 | Build output, dependencies, env files committed | None (`dist/`, `node_modules/`, `.env`, `.secrets/` are ignored) |
 | Private terms (`scripts/leak-check.sh` locally, with ~/.leak-private-terms) | Passed |
 | Leak check in CI | Yes, first step of `.github/workflows/ci.yml` |
-| LICENSE | MIT, Copyright (c) 2026 Captive Origins (added in this audit; general Payload plugins are MIT per ~/Code/CLAUDE.md) |
+| LICENSE | MIT, now Copyright (c) 2026 EXTANT APE (added in this audit; general Payload plugins are MIT per ~/Code/CLAUDE.md) |
 | `package.json` | `private` removed so it can be published; license, repository, homepage, bugs and `files` set; typecheck and tests run before publish |
-| Release workflow and RELEASING.md | Added, the same as the other Captive Origins packages, with a 15-minute timeout |
+| Release workflow and RELEASING.md | Added, the same as the other general Payload plugins, with a 15-minute timeout |
 | README status line says what has and hasn't been tested | Yes |
-| Details of a real site | None. The Captive Origins preset is the brand's public colors; tests use made-up themes and accounts |
+| Details of a real site | None. The Field Guide preset uses a real brand's public colors; tests use made-up themes and accounts |
 
 ## Notes
 

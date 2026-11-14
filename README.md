@@ -2,13 +2,13 @@
 
 Color Theory for Payload: build site and admin themes from color harmonies (complementary, triadic, tetradic and more), with contrast checked in light and dark, an Auto, Light and Dark switch, and JSON import and export with hex values.
 
-**Status:** early, 0.x. 38 tests pass. Tried on a local copy of the Captive Origins site in Chromium, light and dark:
+**Status:** early, 0.x. 38 tests pass. Tried on a local copy of a real site in Chromium, light and dark:
 
 - the editor works: presets, harmonies, import, export and save;
 - the admin takes on a saved theme's colors;
 - axe finds no contrast problems in anything this plugin draws.
 
-It hasn't been used on a live site yet. On a local copy of the Captive Origins site (Chromium, light and dark, desktop and phone), the light/dark switch, Bold brand intensity, the header and its menus passed axe on eight pages. The editor's UI kit and the exact-colors warnings have only been tested in jsdom so far.
+It hasn't been used on a live site yet. On a local copy of a real site (Chromium, light and dark, desktop and phone), the light/dark switch, Bold brand intensity, the header and its menus passed axe on eight pages. The editor's UI kit and the exact-colors warnings have only been tested in jsdom so far.
 
 ## What it does
 
@@ -27,12 +27,12 @@ It hasn't been used on a live site yet. On a local copy of the Captive Origins s
 - **Adjust, or keep my exact colors.** By default colors are adjusted for accessibility. Switch a theme to "Use my exact colors" and nothing is moved: the editor marks what falls short and offers the nearest passing color, but saving still works.
 - **A live UI kit in the editor.** A header, buttons, links, a card with its band, badges, a form field and an alert, in light and dark side by side, updated as you change colors. A red mark sits on any element that fails WCAG AA; open it for "Better for accessibility: #xxxxxx" and a "Use this" button. Under the kit, a live WCAG table (closed by default) gives each pair's ratio, graded AAA, AA, "AA, close" or Fails in color and in words; choosing a row points at that element. The result is announced politely once you pause.
 - **Import and export.** Themes are plain JSON with hex values (`format: "color-theory/1"`). Import checks every field and says what's wrong. The admin refuses to save a theme that wouldn't import.
-- **Presets:** Captive Origins, Terracotta, Rainforest, Reef, Desert bloom, Night market, High contrast. Each passes contrast in light and dark.
+- **Presets:** Field Guide, Terracotta, Rainforest, Reef, Desert bloom, Night market, High contrast. Each passes contrast in light and dark.
 
 ```json
 {
   "format": "color-theory/1",
-  "name": "Captive Origins",
+  "name": "Field Guide",
   "colors": { "primary": "#cf8137", "secondary": "#e48185", "accent": "#5a8f6b", "neutral": "#3b2a26" },
   "radius": { "md": 8, "lg": 14 }
 }
@@ -40,7 +40,7 @@ It hasn't been used on a live site yet. On a local copy of the Captive Origins s
 
 ## On its own, and with others
 
-**On its own.** Color Theory needs only Payload. It adds its own collection, global and CSS endpoints, and your site links the CSS. It doesn't use any other Captive Origins plugin.
+**On its own.** Color Theory needs only Payload. It adds its own collection, global and CSS endpoints, and your site links the CSS. It doesn't use any other plugin.
 
 **Works with:**
 

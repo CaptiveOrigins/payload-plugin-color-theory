@@ -4,7 +4,7 @@ import { themeFromHarmony, type Theme } from './theme.js'
 export const PRESETS: Theme[] = [
   {
     format: 'color-theory/1',
-    name: 'Captive Origins',
+    name: 'Field Guide',
     colors: { primary: '#cf8137', secondary: '#e48185', accent: '#5a8f6b', neutral: '#3b2a26' },
     radius: { md: 8, lg: 14 },
   },

@@ -16,7 +16,7 @@ vi.mock('@payloadcms/ui', () => ({
 const { ThemeEditor } = await import('../src/client/ThemeEditor.js')
 
 afterEach(() => (cleanup(), vi.useRealTimers()))
-const co = PRESETS.find((p) => p.name === 'Captive Origins')!
+const co = PRESETS.find((p) => p.name === 'Field Guide')!
 const pale: Theme = { format: 'color-theory/1', name: 'Pale', colors: { primary: '#f5c99b', neutral: '#3b2a26' }, accessibility: 'exact' }
 
 describe('the theme editor', () => {

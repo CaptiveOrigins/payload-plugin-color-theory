@@ -119,7 +119,7 @@ describe('import and export', () => {
 })
 
 describe('brand intensity', () => {
-  const co = PRESETS.find((p) => p.name === 'Captive Origins')!
+  const co = PRESETS.find((p) => p.name === 'Field Guide')!
   it('turns on more kinds of element at each level, Bold by default, and per-group overrides win', () => {
     const on = (t: Theme) => Object.entries(brandGroups(t)).filter(([, x]) => x).map(([g]) => g)
     expect(on(co)).toEqual(['buttons', 'header', 'badges', 'bands', 'washes'])

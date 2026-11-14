@@ -72,7 +72,7 @@ describe('the theme in use', () => {
     expect(css.headers.get('content-type')).toContain('text/css')
     expect(await css.text()).toContain(':root {')
     const presets = (await (await (ep('/color-theory/presets').handler({ payload } as never) as Promise<Response>)).json()) as { presets: { name: string }[] }
-    expect(presets.presets.map((p) => p.name)).toContain('Captive Origins')
+    expect(presets.presets.map((p) => p.name)).toContain('Field Guide')
   })
 
   it('adds the admin provider and leaves other providers alone', () => {
